@@ -1,7 +1,6 @@
 use std::error::Error;
 use std::str::FromStr;
 
-
 #[derive(Debug)]
 pub enum ChessError {
     InvalidPiece(String),
@@ -37,6 +36,24 @@ pub enum Row {
     Eight,
 }
 
+impl FromStr for Row {
+    type Err = ChessError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.trim() {
+            "1" => Ok(Row::One),
+            "2" => Ok(Row::Two),
+            "3" => Ok(Row::Three),
+            "4" => Ok(Row::Four),
+            "5" => Ok(Row::Five),
+            "6" => Ok(Row::Six),
+            "7" => Ok(Row::Seven),
+            "8" => Ok(Row::Eight),
+            _ => Err(ChessError::InvalidMove(format!("Invalid row: '{}'", s))),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
 pub enum Column {
     A,
@@ -47,6 +64,24 @@ pub enum Column {
     F,
     G,
     H,
+}
+
+impl FromStr for Column {
+    type Err = ChessError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.trim().to_ascii_lowercase().as_str() {
+            "a" => Ok(Column::A),
+            "b" => Ok(Column::B),
+            "c" => Ok(Column::C),
+            "d" => Ok(Column::D),
+            "e" => Ok(Column::E),
+            "f" => Ok(Column::F),
+            "g" => Ok(Column::G),
+            "h" => Ok(Column::H),
+            _ => Err(ChessError::InvalidMove(format!("Invalid column: '{}'", s))),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
@@ -61,43 +96,26 @@ impl FromStr for Position {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // parse the format a1, c6, ...
         if s.len() != 2 {
-            return Err(ChessError::InvalidMove(format!("Invalid position format: '{}'", s)));
+            return Err(ChessError::InvalidMove(format!(
+                "Invalid position format: '{}'",
+                s
+            )));
         }
-        let mut chars = s.chars();
-        let column = match chars.next().map(|s| s.to_ascii_lowercase()) {
-            Some('a') => Column::A,
-            Some('b') => Column::B,
-            Some('c') => Column::C,
-            Some('d') => Column::D,
-            Some('e') => Column::E,
-            Some('f') => Column::F,
-            Some('g') => Column::G,
-            Some('h') => Column::H,
-            _ => return Err(ChessError::InvalidMove(format!("Invalid column in position: '{}'", s))),
-        };
-        let row = match chars.next() {
-            Some('1') => Row::One,
-            Some('2') => Row::Two,
-            Some('3') => Row::Three,
-            Some('4') => Row::Four,
-            Some('5') => Row::Five,
-            Some('6') => Row::Six,
-            Some('7') => Row::Seven,
-            Some('8') => Row::Eight,
-            _ => return Err(ChessError::InvalidMove(format!("Invalid row in position: '{}'", s))),
-        };
+        let column = Column::from_str(s.get(0..1).ok_or_else(|| {
+            ChessError::InvalidMove(format!("Invalid column in position: '{}'", s))
+        })?)?;
+        let row = Row::from_str(s.get(1..2).ok_or_else(|| {
+            ChessError::InvalidMove(format!("Invalid row in position: '{}'", s))
+        })?)?;
         Ok(Position { row, column })
     }
 }
-
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
 pub struct Move {
     pub from: Position,
     pub to: Position,
 }
-
-
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
 pub enum ChessPieceKind {
@@ -114,7 +132,6 @@ pub enum ChessColour {
     White,
     Black,
 }
-
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
 pub struct ChessPiece {
@@ -151,7 +168,10 @@ impl TryFrom<char> for ChessPiece {
             'r' => Ok(ChessPieceKind::Rook),
             'q' => Ok(ChessPieceKind::Queen),
             'k' => Ok(ChessPieceKind::King),
-            _ => Err(ChessError::InvalidPiece(format!("Invalid chess piece character: '{}'", c))),
+            _ => Err(ChessError::InvalidPiece(format!(
+                "Invalid chess piece character: '{}'",
+                c
+            ))),
         }?;
         let colour = if c.is_uppercase() {
             ChessColour::White
@@ -200,9 +220,10 @@ pub struct ChessBoard {
 
 impl ChessBoard {
     pub fn row_iter(&self) -> impl Iterator<Item = (usize, usize, Cell)> {
-        self.board.iter().enumerate().flat_map(|(i, row)| {
-            row.iter().enumerate().map(move |(j, piece)| (i, j, *piece))
-        })
+        self.board
+            .iter()
+            .enumerate()
+            .flat_map(|(i, row)| row.iter().enumerate().map(move |(j, piece)| (i, j, *piece)))
     }
 }
 
@@ -214,16 +235,22 @@ impl FromStr for ChessBoard {
             piece: None,
             colour: ChessColour::White,
         }; 8]; 8];
-        for (i, line) in s.lines()
+        for (i, line) in s
+            .lines()
             .map(|l| l.trim())
             .filter(|l| !l.is_empty())
-            .enumerate() {
+            .enumerate()
+        {
             if i >= 8 {
-                return Err(ChessError::InvalidPiece("too many rows on chess board".to_string()));
+                return Err(ChessError::InvalidPiece(
+                    "too many rows on chess board".to_string(),
+                ));
             }
             for (j, c) in line.chars().enumerate() {
                 if j >= 8 {
-                    return Err(ChessError::InvalidPiece("too many columns on chess board".to_string()));
+                    return Err(ChessError::InvalidPiece(
+                        "too many columns on chess board".to_string(),
+                    ));
                 }
                 board[i][j] = Cell::parse(c, (i, j))?;
             }
@@ -248,12 +275,10 @@ impl Default for ChessBoard {
         PPPPPPPP
         RNBQKBRN
     "#;
-        let board = ChessBoard::from_str(board_str)
-            .expect("Failed to parse chess board");
+        let board = ChessBoard::from_str(board_str).expect("Failed to parse chess board");
         ChessBoard {
             board: board.board,
             turn: ChessColour::White,
         }
     }
 }
-

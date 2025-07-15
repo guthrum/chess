@@ -1,6 +1,6 @@
-use std::panic::panic_any;
-use crate::{ChessBoard, ChessError};
 use crate::core::{Move, Position};
+use crate::{ChessBoard, ChessError};
+use std::panic::panic_any;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
 pub enum GameStatus {
@@ -12,7 +12,7 @@ pub enum GameStatus {
 pub struct GameState<'a> {
     pub status: GameStatus,
     board: &'a ChessBoard,
-    available_moves: Vec<Move>
+    available_moves: Vec<Move>,
 }
 
 /// A simple chess engine that manages the chess board and handles moves.
@@ -30,10 +30,7 @@ impl ChessEngine {
 
     /// Try and make a move on the chess board.
     pub fn make_move(&mut self, from: Position, to: Position) -> Result<GameState<'_>, ChessError> {
-        self.moves.push(Move {
-            from,
-            to,
-        });
+        self.moves.push(Move { from, to });
         if !self.get_available_moves(from)?.contains(&to) {
             Err(ChessError::InvalidMove("".to_string()))
         } else {
