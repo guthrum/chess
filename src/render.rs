@@ -8,24 +8,26 @@ pub fn display_board(chess_board: &ChessBoard) {
 
     println!("    a b c d e f g h");
     println!("  ┌─────────────────┐");
-    for (yidx, xidx, cell) in chess_board.row_iter() {
-        if xidx == 0 {
-            print!("{} │ ", 8 - yidx);
-        }
+    for (yidx, row) in chess_board.rows().rev().enumerate() {
+        for (xidx, cell) in row.iter().enumerate() {
+            if xidx == 0 {
+                print!("{} │ ", 8 - yidx);
+            }
 
-        let mut c: char = (&cell).into();
-        if c == '.' {
-            c = '·'
-        }
-        let colour = if cell.colour == ChessColour::White {
-            c.to_string().white()
-        } else {
-            c.to_string().blue()
-        };
+            let mut c: char = cell.into();
+            if c == '.' {
+                c = '·'
+            }
+            let colour = if cell.colour == ChessColour::White {
+                c.to_string().white()
+            } else {
+                c.to_string().blue()
+            };
 
-        print!("{} ", colour);
-        if xidx == 7 {
-            println!("│");
+            print!("{} ", colour);
+            if xidx == 7 {
+                println!("│");
+            }
         }
     }
     println!("  └─────────────────┘");

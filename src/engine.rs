@@ -1,6 +1,5 @@
-use crate::core::{Move, Position};
+use crate::core::{Cell, ChessPiece, ChessPieceKind, Move, Position};
 use crate::{ChessBoard, ChessError};
-use std::panic::panic_any;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
 pub enum GameStatus {
@@ -12,7 +11,6 @@ pub enum GameStatus {
 pub struct GameState<'a> {
     pub status: GameStatus,
     board: &'a ChessBoard,
-    available_moves: Vec<Move>,
 }
 
 /// A simple chess engine that manages the chess board and handles moves.
@@ -20,6 +18,7 @@ pub struct GameState<'a> {
 pub struct ChessEngine {
     chess_board: ChessBoard,
     moves: Vec<Move>,
+    taken_pieces: Vec<ChessPiece>,
 }
 
 impl ChessEngine {
@@ -30,26 +29,99 @@ impl ChessEngine {
 
     /// Try and make a move on the chess board.
     pub fn make_move(&mut self, from: Position, to: Position) -> Result<GameState<'_>, ChessError> {
-        self.moves.push(Move { from, to });
+        let from_cell = self
+            .chess_board
+            .get_piece_at(from)
+            .ok_or(ChessError::InvalidMove(
+                "from position does not exist".to_string(),
+            ))?;
+        if from_cell.piece.is_none() {
+            return Err(ChessError::InvalidMove(
+                "no piece at from position".to_string(),
+            ));
+        }
+        if from_cell.piece.as_ref().unwrap().colour != self.chess_board.turn {
+            return Err(ChessError::InvalidMove(
+                "cannot move opponent's piece".to_string(),
+            ));
+        }
+
         if !self.get_available_moves(from)?.contains(&to) {
             Err(ChessError::InvalidMove("".to_string()))
         } else {
-            // TODO: implement move logic here and handle taking pieces, etc....
+            self.moves.push(Move { from, to });
+
+            // Move the piece on the board
+            let (old_x, old_y) = from.board_position();
+            let (new_x, new_y) = to.board_position();
+            let taken_cell = self.chess_board.board[new_y][new_x];
+            let old_cell = self.chess_board.board[old_y][old_x];
+            self.chess_board.board[new_y][new_x] = Cell {
+                piece: old_cell.piece,
+                colour: taken_cell.colour,
+            };
+
+            self.chess_board.board[old_y][old_x] = Cell {
+                piece: None,
+                colour: old_cell.colour,
+            };
+            if let Some(taken_piece) = taken_cell.piece {
+                self.taken_pieces.push(taken_piece);
+            }
+            self.chess_board.turn = self.chess_board.turn.flip();
+
             Ok(GameState {
                 status: GameStatus::Ongoing,
                 board: &self.chess_board,
-                // TODO: we need to get all the available moves for the piece at `from`
-                available_moves: vec![],
             })
         }
     }
 
     /// Get the available moves for a piece at the given position.
-    pub fn get_available_moves(&self, piece: Position) -> Result<Vec<Position>, ChessError> {
-        panic!("get_available_moves not implemented yet");
+    pub fn get_available_moves(&self, pos: Position) -> Result<Vec<Position>, ChessError> {
+        let cell = self
+            .chess_board
+            .get_piece_at(pos)
+            .ok_or(ChessError::InvalidMove("cell does not exist".to_string()))?;
+        if let Some(piece) = cell.piece {
+            let raw_moves = match piece.kind {
+                ChessPieceKind::Pawn => self.available_move_for_pawn(&pos, &piece),
+                ChessPieceKind::Knight => todo!(),
+                ChessPieceKind::Bishop => todo!(),
+                ChessPieceKind::Rook => todo!(),
+                ChessPieceKind::Queen => todo!(),
+                ChessPieceKind::King => todo!(),
+            }?;
+            // TODO: filter out moves that are not valid because of other pieces
+
+            Ok(raw_moves)
+        } else {
+            Ok(Vec::new())
+        }
     }
 
-    fn available_move_for_pawn(&self, from: Position) -> Result<Vec<Position>, ChessError> {
-        panic!("available_move_for_pawn not implemented yet");
+    fn available_move_for_pawn(
+        &self,
+        pos: &Position,
+        piece: &ChessPiece,
+    ) -> Result<Vec<Position>, ChessError> {
+        let direction = piece.colour.direction();
+        let mut available_moves = Vec::new();
+        if let Ok(next_row) = pos.row.try_add(direction) {
+            available_moves.push(Position {
+                row: next_row,
+                column: pos.column,
+            })
+        }
+        if !piece.moved {
+            let double_move_row = pos.row.try_add(direction)?.try_add(direction)?;
+            available_moves.push(Position {
+                row: double_move_row,
+                column: pos.column,
+            });
+        }
+        // TODO: handle diagonal captures
+
+        Ok(available_moves)
     }
 }

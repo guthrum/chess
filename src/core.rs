@@ -36,6 +36,45 @@ pub enum Row {
     Eight,
 }
 
+impl Row {
+    pub fn try_add(self, direction: isize) -> Result<Self, ChessError> {
+        if direction == 0 {
+            Ok(self)
+        } else if direction == -1 {
+            match self {
+                Row::One => Err(ChessError::InvalidMove(
+                    "Cannot move down from row 1".to_string(),
+                )),
+                Row::Two => Ok(Row::One),
+                Row::Three => Ok(Row::Two),
+                Row::Four => Ok(Row::Three),
+                Row::Five => Ok(Row::Four),
+                Row::Six => Ok(Row::Five),
+                Row::Seven => Ok(Row::Six),
+                Row::Eight => Ok(Row::Seven),
+            }
+        } else if direction == 1 {
+            match self {
+                Row::One => Ok(Row::Two),
+                Row::Two => Ok(Row::Three),
+                Row::Three => Ok(Row::Four),
+                Row::Four => Ok(Row::Five),
+                Row::Five => Ok(Row::Six),
+                Row::Six => Ok(Row::Seven),
+                Row::Seven => Ok(Row::Eight),
+                Row::Eight => Err(ChessError::InvalidMove(
+                    "Cannot move up from row 8".to_string(),
+                )),
+            }
+        } else {
+            Err(ChessError::InvalidMove(format!(
+                "Invalid direction: {}",
+                direction
+            )))
+        }
+    }
+}
+
 impl FromStr for Row {
     type Err = ChessError;
 
@@ -50,6 +89,21 @@ impl FromStr for Row {
             "7" => Ok(Row::Seven),
             "8" => Ok(Row::Eight),
             _ => Err(ChessError::InvalidMove(format!("Invalid row: '{}'", s))),
+        }
+    }
+}
+
+impl Into<usize> for Row {
+    fn into(self) -> usize {
+        match self {
+            Row::One => 0,
+            Row::Two => 1,
+            Row::Three => 2,
+            Row::Four => 3,
+            Row::Five => 4,
+            Row::Six => 5,
+            Row::Seven => 6,
+            Row::Eight => 7,
         }
     }
 }
@@ -84,10 +138,31 @@ impl FromStr for Column {
     }
 }
 
+impl Into<usize> for Column {
+    fn into(self) -> usize {
+        match self {
+            Column::A => 0,
+            Column::B => 1,
+            Column::C => 2,
+            Column::D => 3,
+            Column::E => 4,
+            Column::F => 5,
+            Column::G => 6,
+            Column::H => 7,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
 pub struct Position {
     pub row: Row,
     pub column: Column,
+}
+
+impl Position {
+    pub fn board_position(&self) -> (usize, usize) {
+        (self.column.into(), self.row.into())
+    }
 }
 
 impl FromStr for Position {
@@ -133,10 +208,27 @@ pub enum ChessColour {
     Black,
 }
 
+impl ChessColour {
+    pub fn direction(&self) -> isize {
+        match self {
+            ChessColour::White => 1,  // White moves up the board
+            ChessColour::Black => -1, // Black moves down the board
+        }
+    }
+
+    pub fn flip(&self) -> ChessColour {
+        match self {
+            ChessColour::White => ChessColour::Black,
+            ChessColour::Black => ChessColour::White,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
 pub struct ChessPiece {
     pub kind: ChessPieceKind,
     pub colour: ChessColour,
+    pub moved: bool,
 }
 
 impl Into<char> for &ChessPiece {
@@ -178,7 +270,11 @@ impl TryFrom<char> for ChessPiece {
         } else {
             ChessColour::Black
         };
-        Ok(ChessPiece { kind, colour })
+        Ok(ChessPiece {
+            kind,
+            colour,
+            moved: false,
+        })
     }
 }
 
@@ -219,11 +315,20 @@ pub struct ChessBoard {
 }
 
 impl ChessBoard {
-    pub fn row_iter(&self) -> impl Iterator<Item = (usize, usize, Cell)> {
-        self.board
-            .iter()
-            .enumerate()
-            .flat_map(|(i, row)| row.iter().enumerate().map(move |(j, piece)| (i, j, *piece)))
+    pub(crate) fn get_piece_at(&self, pos: Position) -> Option<&Cell> {
+        let x: usize = pos.row.into();
+        let y: usize = pos.column.into();
+        if x < 8 && y < 8 {
+            Some(&self.board[x][y])
+        } else {
+            None
+        }
+    }
+}
+
+impl ChessBoard {
+    pub fn rows(&self) -> impl DoubleEndedIterator<Item = &[Cell; 8]> {
+        self.board.iter()
     }
 }
 
@@ -237,6 +342,7 @@ impl FromStr for ChessBoard {
         }; 8]; 8];
         for (i, line) in s
             .lines()
+            .rev()
             .map(|l| l.trim())
             .filter(|l| !l.is_empty())
             .enumerate()

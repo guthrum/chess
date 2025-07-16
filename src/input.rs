@@ -29,11 +29,11 @@ pub fn parse_input_to_move(input: &str) -> Result<Move, ChessError> {
         if c.is_digit(10) {
             Position {
                 row: Row::from_str(second)?,
-                column: from.column, // Keep the same column as 'from'
+                column: from.column,
             }
         } else {
             Position {
-                row: from.row, // Keep the same row as 'from'
+                row: from.row,
                 column: Column::from_str(second)?,
             }
         }
