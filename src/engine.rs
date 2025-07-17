@@ -96,7 +96,7 @@ impl ChessEngine {
             .filter(|m| {
                 // filter out moves that are not valid because of other pieces
                 if let Some(cell) = self.chess_board.get_piece_at(m) {
-                    cell.piece.is_none() || cell.colour != piece.colour
+                    cell.piece.is_none() || cell.piece.map(|p| p.colour != piece.colour).unwrap_or(false)
                 } else {
                     false
                 }
@@ -129,7 +129,18 @@ impl ChessEngine {
                 column: pos.column,
             });
         }
-        // TODO: handle diagonal captures
+
+        // handle diagonal capture for the pawn
+        for i in [-1, 1] {
+            if let Ok(diag) = pos.add_offset(direction, i) {
+                if let Some(cell) = self.chess_board.get_piece_at(&diag) {
+                    println!("cell {cell:?} pos {diag:?}");
+                    if cell.piece.map(|p| p.colour != piece.colour).unwrap_or(false) {
+                        available_moves.push(diag)
+                    }
+                }
+            }
+        }
 
         Ok(available_moves)
     }
