@@ -86,21 +86,22 @@ impl ChessEngine {
         if let Some(piece) = cell.piece {
             let raw_moves = match piece.kind {
                 ChessPieceKind::Pawn => self.available_move_for_pawn(&pos, &piece),
-                ChessPieceKind::Knight =>  self.available_move_for_knight(&pos, &piece),
-                ChessPieceKind::Bishop => todo!(),
-                ChessPieceKind::Rook => todo!(),
+                ChessPieceKind::Knight => self.available_move_for_knight(&pos, &piece),
+                ChessPieceKind::Bishop => Ok(self.available_move_for_bishop(&pos, &piece)),
+                ChessPieceKind::Rook => Ok(self.available_move_for_rook(&pos, &piece)),
                 ChessPieceKind::Queen => todo!(),
                 ChessPieceKind::King => todo!(),
-            }?.into_iter()
-                .filter(|m| {
-                    // filter out moves that are not valid because of other pieces
-                    if let Some(cell) = self.chess_board.get_piece_at(m) {
-                        cell.colour != piece.colour
-                    } else {
-                        false
-                    }
-                })
-                .collect();
+            }?
+            .into_iter()
+            .filter(|m| {
+                // filter out moves that are not valid because of other pieces
+                if let Some(cell) = self.chess_board.get_piece_at(m) {
+                    cell.piece.is_none() || cell.colour != piece.colour
+                } else {
+                    false
+                }
+            })
+            .collect();
 
             Ok(raw_moves)
         } else {
@@ -138,11 +139,55 @@ impl ChessEngine {
         pos: &Position,
         piece: &ChessPiece,
     ) -> Result<Vec<Position>, ChessError> {
-        Ok(vec![(1, 2), (1, -2), (-1, 2), (-1, -2),
-             (2, 1), (2, -1), (-2, 1), (-2, -1)
-        ].iter()
-            .map(|(x, y)| pos.add_offset(*x, *y))
-            .flatten()
-            .collect())
+        Ok(vec![
+            (1, 2),
+            (1, -2),
+            (-1, 2),
+            (-1, -2),
+            (2, 1),
+            (2, -1),
+            (-2, 1),
+            (-2, -1),
+        ]
+        .iter()
+        .map(|(x, y)| pos.add_offset(*x, *y))
+        .flatten()
+        .collect())
+    }
+
+    fn available_move_for_bishop(
+        &self,
+        pos: &Position,
+        piece: &ChessPiece,
+    ) -> Vec<Position> {
+        vec![(1, 1), (-1, 1), (-1, -1), (1, -1)].into_iter()
+            .flat_map(|(i, j)| self.moves_with_offset(&pos, i, j))
+            .collect()
+    }
+
+    fn available_move_for_rook(
+        &self,
+        pos: &Position,
+        piece: &ChessPiece,
+    ) -> Vec<Position> {
+        vec![(1, 0), (0, 1), (-1, 0), (0, -1)].into_iter()
+            .flat_map(|(i, j)| self.moves_with_offset(&pos, i, j))
+            .collect()
+    }
+
+    fn moves_with_offset(&self,
+                         pos: &Position, i: isize, j: isize) -> Vec<Position> {
+        let mut moves = Vec::new();
+        for n in (1..8) {
+            if let Ok(npos) = pos.add_offset(i * n, j * n) {
+                if let Some(cell) = self.chess_board.get_piece_at(&npos) {
+                    moves.push(npos);
+                    if cell.piece.is_some() {
+                        return moves;
+                    }
+                }
+            }
+        }
+        moves
     }
 }
