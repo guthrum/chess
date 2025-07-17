@@ -37,41 +37,9 @@ pub enum Row {
 }
 
 impl Row {
-    pub fn try_add(self, direction: isize) -> Result<Self, ChessError> {
-        if direction == 0 {
-            Ok(self)
-        } else if direction == -1 {
-            match self {
-                Row::One => Err(ChessError::InvalidMove(
-                    "Cannot move down from row 1".to_string(),
-                )),
-                Row::Two => Ok(Row::One),
-                Row::Three => Ok(Row::Two),
-                Row::Four => Ok(Row::Three),
-                Row::Five => Ok(Row::Four),
-                Row::Six => Ok(Row::Five),
-                Row::Seven => Ok(Row::Six),
-                Row::Eight => Ok(Row::Seven),
-            }
-        } else if direction == 1 {
-            match self {
-                Row::One => Ok(Row::Two),
-                Row::Two => Ok(Row::Three),
-                Row::Three => Ok(Row::Four),
-                Row::Four => Ok(Row::Five),
-                Row::Five => Ok(Row::Six),
-                Row::Six => Ok(Row::Seven),
-                Row::Seven => Ok(Row::Eight),
-                Row::Eight => Err(ChessError::InvalidMove(
-                    "Cannot move up from row 8".to_string(),
-                )),
-            }
-        } else {
-            Err(ChessError::InvalidMove(format!(
-                "Invalid direction: {}",
-                direction
-            )))
-        }
+    pub fn try_add(&self, amount: isize) -> Result<Self, ChessError> {
+        let u: usize = (*self).into();
+        Self::try_from((u as isize) + amount)
     }
 }
 
@@ -108,6 +76,24 @@ impl Into<usize> for Row {
     }
 }
 
+impl TryFrom<isize> for Row {
+    type Error = ChessError;
+
+    fn try_from(value: isize) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Row::One),
+            1 => Ok(Row::Two),
+            2 => Ok(Row::Three),
+            3 => Ok(Row::Four),
+            4 => Ok(Row::Five),
+            5 => Ok(Row::Six),
+            6 => Ok(Row::Seven),
+            7 => Ok(Row::Eight),
+            _ => Err(ChessError::InvalidMove(format!("Invalid row: '{}'", value))),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
 pub enum Column {
     A,
@@ -118,6 +104,13 @@ pub enum Column {
     F,
     G,
     H,
+}
+
+impl Column {
+    pub fn try_add(&self, amount: isize) -> Result<Self, ChessError> {
+        let u: usize = (*self).into();
+        Self::try_from((u as isize) + amount)
+    }
 }
 
 impl FromStr for Column {
@@ -134,6 +127,24 @@ impl FromStr for Column {
             "g" => Ok(Column::G),
             "h" => Ok(Column::H),
             _ => Err(ChessError::InvalidMove(format!("Invalid column: '{}'", s))),
+        }
+    }
+}
+
+impl TryFrom<isize> for Column {
+    type Error = ChessError;
+
+    fn try_from(value: isize) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Column::A),
+            1 => Ok(Column::B),
+            2 => Ok(Column::C),
+            3 => Ok(Column::D),
+            4 => Ok(Column::E),
+            5 => Ok(Column::F),
+            6 => Ok(Column::G),
+            7 => Ok(Column::H),
+            _ => Err(ChessError::InvalidMove(format!("Invalid column: '{}'", value))),
         }
     }
 }
@@ -162,6 +173,13 @@ pub struct Position {
 impl Position {
     pub fn board_position(&self) -> (usize, usize) {
         (self.column.into(), self.row.into())
+    }
+
+    pub fn add_offset(&self, row: isize, column: isize) -> Result<Self, ChessError> {
+        Ok(Self {
+            row: self.row.try_add(row)?,
+            column: self.column.try_add(column)?,
+        })
     }
 }
 
@@ -315,7 +333,7 @@ pub struct ChessBoard {
 }
 
 impl ChessBoard {
-    pub(crate) fn get_piece_at(&self, pos: Position) -> Option<&Cell> {
+    pub(crate) fn get_piece_at(&self, pos: &Position) -> Option<&Cell> {
         let x: usize = pos.row.into();
         let y: usize = pos.column.into();
         if x < 8 && y < 8 {

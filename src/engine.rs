@@ -31,7 +31,7 @@ impl ChessEngine {
     pub fn make_move(&mut self, from: Position, to: Position) -> Result<GameState<'_>, ChessError> {
         let from_cell = self
             .chess_board
-            .get_piece_at(from)
+            .get_piece_at(&from)
             .ok_or(ChessError::InvalidMove(
                 "from position does not exist".to_string(),
             ))?;
@@ -81,18 +81,26 @@ impl ChessEngine {
     pub fn get_available_moves(&self, pos: Position) -> Result<Vec<Position>, ChessError> {
         let cell = self
             .chess_board
-            .get_piece_at(pos)
+            .get_piece_at(&pos)
             .ok_or(ChessError::InvalidMove("cell does not exist".to_string()))?;
         if let Some(piece) = cell.piece {
             let raw_moves = match piece.kind {
                 ChessPieceKind::Pawn => self.available_move_for_pawn(&pos, &piece),
-                ChessPieceKind::Knight => todo!(),
+                ChessPieceKind::Knight =>  self.available_move_for_knight(&pos, &piece),
                 ChessPieceKind::Bishop => todo!(),
                 ChessPieceKind::Rook => todo!(),
                 ChessPieceKind::Queen => todo!(),
                 ChessPieceKind::King => todo!(),
-            }?;
-            // TODO: filter out moves that are not valid because of other pieces
+            }?.into_iter()
+                .filter(|m| {
+                    // filter out moves that are not valid because of other pieces
+                    if let Some(cell) = self.chess_board.get_piece_at(m) {
+                        cell.colour != piece.colour
+                    } else {
+                        false
+                    }
+                })
+                .collect();
 
             Ok(raw_moves)
         } else {
@@ -123,5 +131,18 @@ impl ChessEngine {
         // TODO: handle diagonal captures
 
         Ok(available_moves)
+    }
+
+    fn available_move_for_knight(
+        &self,
+        pos: &Position,
+        piece: &ChessPiece,
+    ) -> Result<Vec<Position>, ChessError> {
+        Ok(vec![(1, 2), (1, -2), (-1, 2), (-1, -2),
+             (2, 1), (2, -1), (-2, 1), (-2, -1)
+        ].iter()
+            .map(|(x, y)| pos.add_offset(*x, *y))
+            .flatten()
+            .collect())
     }
 }
