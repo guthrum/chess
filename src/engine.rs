@@ -89,7 +89,7 @@ impl ChessEngine {
                 ChessPieceKind::Knight => self.available_move_for_knight(&pos, &piece),
                 ChessPieceKind::Bishop => Ok(self.available_move_for_bishop(&pos, &piece)),
                 ChessPieceKind::Rook => Ok(self.available_move_for_rook(&pos, &piece)),
-                ChessPieceKind::Queen => todo!(),
+                ChessPieceKind::Queen => Ok(self.available_move_for_queen(&pos, &piece)),
                 ChessPieceKind::King => todo!(),
             }?
             .into_iter()
@@ -182,6 +182,16 @@ impl ChessEngine {
         piece: &ChessPiece,
     ) -> Vec<Position> {
         vec![(1, 0), (0, 1), (-1, 0), (0, -1)].into_iter()
+            .flat_map(|(i, j)| self.moves_with_offset(&pos, i, j))
+            .collect()
+    }
+
+    fn available_move_for_queen(
+        &self,
+        pos: &Position,
+        piece: &ChessPiece,
+    ) -> Vec<Position> {
+        vec![(1, 0), (0, 1), (-1, 0), (0, -1), (1, 1), (-1, 1), (-1, -1), (1, -1)].into_iter()
             .flat_map(|(i, j)| self.moves_with_offset(&pos, i, j))
             .collect()
     }
