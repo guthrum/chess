@@ -13,15 +13,15 @@ pub struct GameState<'a> {
     board: &'a ChessBoard,
 }
 
-/// A simple chess engine that manages the chess board and handles moves.
+/// A simple chess game engine that manages the chess board and handles moves.
 #[derive(Default)]
-pub struct ChessEngine {
+pub struct ChessGame {
     chess_board: ChessBoard,
     moves: Vec<Move>,
     taken_pieces: Vec<ChessPiece>,
 }
 
-impl ChessEngine {
+impl ChessGame {
     /// Get the current chess board.
     pub fn get_board(&self) -> &ChessBoard {
         &self.chess_board
