@@ -196,9 +196,10 @@ impl FromStr for Position {
         let column = Column::from_str(s.get(0..1).ok_or_else(|| {
             ChessError::InvalidMove(format!("Invalid column in position: '{s}'"))
         })?)?;
-        let row = Row::from_str(s.get(1..2).ok_or_else(|| {
-            ChessError::InvalidMove(format!("Invalid row in position: '{s}'"))
-        })?)?;
+        let row =
+            Row::from_str(s.get(1..2).ok_or_else(|| {
+                ChessError::InvalidMove(format!("Invalid row in position: '{s}'"))
+            })?)?;
         Ok(Position { row, column })
     }
 }

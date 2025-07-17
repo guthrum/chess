@@ -90,7 +90,7 @@ impl ChessEngine {
                 ChessPieceKind::Bishop => Ok(self.available_move_for_bishop(&pos, &piece)),
                 ChessPieceKind::Rook => Ok(self.available_move_for_rook(&pos, &piece)),
                 ChessPieceKind::Queen => Ok(self.available_move_for_queen(&pos, &piece)),
-                ChessPieceKind::King => todo!(),
+                ChessPieceKind::King => Ok(self.available_move_for_king(&pos, &piece)),
             }?
             .into_iter()
             .filter(|m| {
@@ -138,7 +138,6 @@ impl ChessEngine {
         for i in [-1, 1] {
             if let Ok(diag) = pos.add_offset(direction, i) {
                 if let Some(cell) = self.chess_board.get_piece_at(&diag) {
-                    println!("cell {cell:?} pos {diag:?}");
                     if cell
                         .piece
                         .map(|p| p.colour != piece.colour)
@@ -153,19 +152,31 @@ impl ChessEngine {
         Ok(available_moves)
     }
 
+    fn available_move_for_king(&self, pos: &Position, piece: &ChessPiece) -> Vec<Position> {
+        // TODO: this does not prevent the king moving to be in check
+        // TODO: this does not handle castling
+        vec![(1, 0), (-1, 0), (0, 1), (0, -1)]
+            .into_iter()
+            .map(|(j, i)| pos.add_offset(j, i))
+            .flatten()
+            .collect()
+    }
+
     fn available_move_for_knight(
         &self,
         pos: &Position,
         piece: &ChessPiece,
     ) -> Result<Vec<Position>, ChessError> {
-        Ok([(1, 2),
+        Ok([
+            (1, 2),
             (1, -2),
             (-1, 2),
             (-1, -2),
             (2, 1),
             (2, -1),
             (-2, 1),
-            (-2, -1)]
+            (-2, -1),
+        ]
         .iter()
         .flat_map(|(x, y)| pos.add_offset(*x, *y))
         .collect())
