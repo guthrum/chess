@@ -3,11 +3,9 @@ mod engine;
 mod input;
 mod render;
 
-use crate::core::Position;
 use crate::engine::GameStatus;
 use crate::input::parse_input_to_move;
 use core::{ChessBoard, ChessColour, ChessError, ChessPiece};
-use std::str::FromStr;
 
 fn main() {
     let mut engine = engine::ChessEngine::default();
@@ -31,7 +29,7 @@ fn main() {
                     render::display_board(engine.get_board());
                 }
                 Err(e) => {
-                    println!("Error making move: {}", e);
+                    println!("Error making move: {e}");
                 }
             }
         } else {

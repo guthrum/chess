@@ -10,17 +10,15 @@ pub enum ChessError {
 impl std::fmt::Display for ChessError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ChessError::InvalidPiece(msg) => write!(f, "Invalid chess piece: {}", msg),
-            ChessError::InvalidMove(msg) => write!(f, "Invalid move: {}", msg),
+            ChessError::InvalidPiece(msg) => write!(f, "Invalid chess piece: {msg}"),
+            ChessError::InvalidMove(msg) => write!(f, "Invalid move: {msg}"),
         }
     }
 }
 
 impl Error for ChessError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            _ => None,
-        }
+        None
     }
 }
 
@@ -56,14 +54,14 @@ impl FromStr for Row {
             "6" => Ok(Row::Six),
             "7" => Ok(Row::Seven),
             "8" => Ok(Row::Eight),
-            _ => Err(ChessError::InvalidMove(format!("Invalid row: '{}'", s))),
+            _ => Err(ChessError::InvalidMove(format!("Invalid row: '{s}'"))),
         }
     }
 }
 
-impl Into<usize> for Row {
-    fn into(self) -> usize {
-        match self {
+impl From<Row> for usize {
+    fn from(val: Row) -> Self {
+        match val {
             Row::One => 0,
             Row::Two => 1,
             Row::Three => 2,
@@ -89,7 +87,7 @@ impl TryFrom<isize> for Row {
             5 => Ok(Row::Six),
             6 => Ok(Row::Seven),
             7 => Ok(Row::Eight),
-            _ => Err(ChessError::InvalidMove(format!("Invalid row: '{}'", value))),
+            _ => Err(ChessError::InvalidMove(format!("Invalid row: '{value}'"))),
         }
     }
 }
@@ -126,7 +124,7 @@ impl FromStr for Column {
             "f" => Ok(Column::F),
             "g" => Ok(Column::G),
             "h" => Ok(Column::H),
-            _ => Err(ChessError::InvalidMove(format!("Invalid column: '{}'", s))),
+            _ => Err(ChessError::InvalidMove(format!("Invalid column: '{s}'"))),
         }
     }
 }
@@ -144,14 +142,16 @@ impl TryFrom<isize> for Column {
             5 => Ok(Column::F),
             6 => Ok(Column::G),
             7 => Ok(Column::H),
-            _ => Err(ChessError::InvalidMove(format!("Invalid column: '{}'", value))),
+            _ => Err(ChessError::InvalidMove(format!(
+                "Invalid column: '{value}'"
+            ))),
         }
     }
 }
 
-impl Into<usize> for Column {
-    fn into(self) -> usize {
-        match self {
+impl From<Column> for usize {
+    fn from(val: Column) -> Self {
+        match val {
             Column::A => 0,
             Column::B => 1,
             Column::C => 2,
@@ -190,15 +190,14 @@ impl FromStr for Position {
         // parse the format a1, c6, ...
         if s.len() != 2 {
             return Err(ChessError::InvalidMove(format!(
-                "Invalid position format: '{}'",
-                s
+                "Invalid position format: '{s}'"
             )));
         }
         let column = Column::from_str(s.get(0..1).ok_or_else(|| {
-            ChessError::InvalidMove(format!("Invalid column in position: '{}'", s))
+            ChessError::InvalidMove(format!("Invalid column in position: '{s}'"))
         })?)?;
         let row = Row::from_str(s.get(1..2).ok_or_else(|| {
-            ChessError::InvalidMove(format!("Invalid row in position: '{}'", s))
+            ChessError::InvalidMove(format!("Invalid row in position: '{s}'"))
         })?)?;
         Ok(Position { row, column })
     }
@@ -249,9 +248,9 @@ pub struct ChessPiece {
     pub moved: bool,
 }
 
-impl Into<char> for &ChessPiece {
-    fn into(self) -> char {
-        let c = match self.kind {
+impl From<&ChessPiece> for char {
+    fn from(val: &ChessPiece) -> Self {
+        let c = match val.kind {
             ChessPieceKind::Pawn => 'p',
             ChessPieceKind::Knight => 'n',
             ChessPieceKind::Bishop => 'b',
@@ -259,7 +258,7 @@ impl Into<char> for &ChessPiece {
             ChessPieceKind::Queen => 'q',
             ChessPieceKind::King => 'k',
         };
-        if self.colour == ChessColour::White {
+        if val.colour == ChessColour::White {
             c.to_ascii_uppercase()
         } else {
             c.to_ascii_lowercase()
@@ -279,8 +278,7 @@ impl TryFrom<char> for ChessPiece {
             'q' => Ok(ChessPieceKind::Queen),
             'k' => Ok(ChessPieceKind::King),
             _ => Err(ChessError::InvalidPiece(format!(
-                "Invalid chess piece character: '{}'",
-                c
+                "Invalid chess piece character: '{c}'"
             ))),
         }?;
         let colour = if c.is_uppercase() {
@@ -318,9 +316,9 @@ impl Cell {
     }
 }
 
-impl Into<char> for &Cell {
-    fn into(self) -> char {
-        match &self.piece {
+impl From<&Cell> for char {
+    fn from(val: &Cell) -> Self {
+        match &val.piece {
             Some(piece) => piece.into(),
             None => '.',
         }

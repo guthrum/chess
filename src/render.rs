@@ -24,7 +24,7 @@ pub fn display_board(chess_board: &ChessBoard) {
                 c.to_string().blue()
             };
 
-            print!("{} ", colour);
+            print!("{colour} ");
             if xidx == 7 {
                 println!("│");
             }

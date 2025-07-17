@@ -23,10 +23,10 @@ pub fn parse_input_to_move(input: &str) -> Result<Move, ChessError> {
     };
 
     let from = Position::from_str(first)
-        .map_err(|_| ChessError::InvalidMove(format!("Invalid 'from' position: '{}'", first)))?;
+        .map_err(|_| ChessError::InvalidMove(format!("Invalid 'from' position: '{first}'")))?;
     let to = if second.len() == 1 {
         let c = second.chars().next().unwrap();
-        if c.is_digit(10) {
+        if c.is_ascii_digit() {
             Position {
                 row: Row::from_str(second)?,
                 column: from.column,
@@ -39,7 +39,7 @@ pub fn parse_input_to_move(input: &str) -> Result<Move, ChessError> {
         }
     } else {
         Position::from_str(second)
-            .map_err(|_| ChessError::InvalidMove(format!("Invalid 'to' position: '{}'", first)))?
+            .map_err(|_| ChessError::InvalidMove(format!("Invalid 'to' position: '{first}'")))?
     };
 
     Ok(Move { from, to })
@@ -64,12 +64,11 @@ mod test {
         };
         for input in ["a2 a3", "a2a3", " a2    a3", "a23"] {
             let move_result = parse_input_to_move(input);
-            assert!(move_result.is_ok(), "Failed to parse input: {}", input);
+            assert!(move_result.is_ok(), "Failed to parse input: {input}");
             let chess_move = move_result.unwrap();
             assert_eq!(
                 chess_move, expected,
-                "Parsed move does not match expected for input: {}",
-                input
+                "Parsed move does not match expected for input: {input}"
             );
         }
     }

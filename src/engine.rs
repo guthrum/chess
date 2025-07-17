@@ -96,7 +96,11 @@ impl ChessEngine {
             .filter(|m| {
                 // filter out moves that are not valid because of other pieces
                 if let Some(cell) = self.chess_board.get_piece_at(m) {
-                    cell.piece.is_none() || cell.piece.map(|p| p.colour != piece.colour).unwrap_or(false)
+                    cell.piece.is_none()
+                        || cell
+                            .piece
+                            .map(|p| p.colour != piece.colour)
+                            .unwrap_or(false)
                 } else {
                     false
                 }
@@ -135,7 +139,11 @@ impl ChessEngine {
             if let Ok(diag) = pos.add_offset(direction, i) {
                 if let Some(cell) = self.chess_board.get_piece_at(&diag) {
                     println!("cell {cell:?} pos {diag:?}");
-                    if cell.piece.map(|p| p.colour != piece.colour).unwrap_or(false) {
+                    if cell
+                        .piece
+                        .map(|p| p.colour != piece.colour)
+                        .unwrap_or(false)
+                    {
                         available_moves.push(diag)
                     }
                 }
@@ -150,56 +158,52 @@ impl ChessEngine {
         pos: &Position,
         piece: &ChessPiece,
     ) -> Result<Vec<Position>, ChessError> {
-        Ok(vec![
-            (1, 2),
+        Ok([(1, 2),
             (1, -2),
             (-1, 2),
             (-1, -2),
             (2, 1),
             (2, -1),
             (-2, 1),
-            (-2, -1),
-        ]
+            (-2, -1)]
         .iter()
-        .map(|(x, y)| pos.add_offset(*x, *y))
-        .flatten()
+        .flat_map(|(x, y)| pos.add_offset(*x, *y))
         .collect())
     }
 
-    fn available_move_for_bishop(
-        &self,
-        pos: &Position,
-        piece: &ChessPiece,
-    ) -> Vec<Position> {
-        vec![(1, 1), (-1, 1), (-1, -1), (1, -1)].into_iter()
-            .flat_map(|(i, j)| self.moves_with_offset(&pos, i, j))
+    fn available_move_for_bishop(&self, pos: &Position, piece: &ChessPiece) -> Vec<Position> {
+        vec![(1, 1), (-1, 1), (-1, -1), (1, -1)]
+            .into_iter()
+            .flat_map(|(i, j)| self.moves_with_offset(pos, i, j))
             .collect()
     }
 
-    fn available_move_for_rook(
-        &self,
-        pos: &Position,
-        piece: &ChessPiece,
-    ) -> Vec<Position> {
-        vec![(1, 0), (0, 1), (-1, 0), (0, -1)].into_iter()
-            .flat_map(|(i, j)| self.moves_with_offset(&pos, i, j))
+    fn available_move_for_rook(&self, pos: &Position, piece: &ChessPiece) -> Vec<Position> {
+        vec![(1, 0), (0, 1), (-1, 0), (0, -1)]
+            .into_iter()
+            .flat_map(|(i, j)| self.moves_with_offset(pos, i, j))
             .collect()
     }
 
-    fn available_move_for_queen(
-        &self,
-        pos: &Position,
-        piece: &ChessPiece,
-    ) -> Vec<Position> {
-        vec![(1, 0), (0, 1), (-1, 0), (0, -1), (1, 1), (-1, 1), (-1, -1), (1, -1)].into_iter()
-            .flat_map(|(i, j)| self.moves_with_offset(&pos, i, j))
-            .collect()
+    fn available_move_for_queen(&self, pos: &Position, piece: &ChessPiece) -> Vec<Position> {
+        vec![
+            (1, 0),
+            (0, 1),
+            (-1, 0),
+            (0, -1),
+            (1, 1),
+            (-1, 1),
+            (-1, -1),
+            (1, -1),
+        ]
+        .into_iter()
+        .flat_map(|(i, j)| self.moves_with_offset(pos, i, j))
+        .collect()
     }
 
-    fn moves_with_offset(&self,
-                         pos: &Position, i: isize, j: isize) -> Vec<Position> {
+    fn moves_with_offset(&self, pos: &Position, i: isize, j: isize) -> Vec<Position> {
         let mut moves = Vec::new();
-        for n in (1..8) {
+        for n in 1..8 {
             if let Ok(npos) = pos.add_offset(i * n, j * n) {
                 if let Some(cell) = self.chess_board.get_piece_at(&npos) {
                     moves.push(npos);
