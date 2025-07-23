@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 
 #[derive(Debug)]
@@ -220,6 +221,31 @@ pub enum ChessPieceKind {
     King,
 }
 
+impl ChessPieceKind {
+    fn hash_value(&self) -> u8 {
+        match *self {
+            ChessPieceKind::Pawn => 1,
+            ChessPieceKind::Knight => 2,
+            ChessPieceKind::Bishop => 3,
+            ChessPieceKind::Rook => 4,
+            ChessPieceKind::Queen => 5,
+            ChessPieceKind::King => 6,
+        }
+    }
+    pub fn value(&self) -> isize {
+        // TODO: this is quite a simple evaluation of piece value,
+        // we might want to extend later to account for pairs etc....
+        match self {
+            ChessPieceKind::Pawn => 1,
+            ChessPieceKind::Knight => 3,
+            ChessPieceKind::Bishop => 3,
+            ChessPieceKind::Rook => 5,
+            ChessPieceKind::Queen => 9,
+            ChessPieceKind::King => 200, // King has no value in terms of points
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
 pub enum ChessColour {
     White,
@@ -227,6 +253,12 @@ pub enum ChessColour {
 }
 
 impl ChessColour {
+    fn hash_multiplier(&self) -> u8 {
+        match *self {
+            ChessColour::White => 1,
+            ChessColour::Black => 0
+        }
+    }
     pub fn direction(&self) -> isize {
         match self {
             ChessColour::White => 1,  // White moves up the board
@@ -346,6 +378,20 @@ impl ChessBoard {
 impl ChessBoard {
     pub fn rows(&self) -> impl DoubleEndedIterator<Item = &[Cell; 8]> {
         self.board.iter()
+    }
+
+    pub fn hash(&self) -> u64 {
+        use xxhash_rust::xxh3::xxh3_64;
+        let mut arr = [0; 64];
+        for i in 0..=7 {
+            for j in 0..=7 {
+                let cell = self.board[i][j];
+                if let Some(piece) = cell.piece {
+                    arr[i * 8 + j] = (piece.kind.hash_value() + 8 * cell.colour.hash_multiplier()) as u8;
+                }
+            }
+        }
+        xxh3_64(&arr)
     }
 }
 

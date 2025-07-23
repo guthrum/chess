@@ -5,3 +5,7 @@ edition = "2024"
 
 [dependencies]
 colored = "3"
+
+[dependencies.xxhash-rust]
+version = "0.8.5"
+features = ["xxh3", "const_xxh3"]
