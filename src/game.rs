@@ -14,7 +14,7 @@ pub struct GameState<'a> {
 }
 
 /// A simple chess game engine that manages the chess board and handles moves.
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct ChessGame {
     chess_board: ChessBoard,
     moves: Vec<Move>,
@@ -28,7 +28,9 @@ impl ChessGame {
     }
 
     /// Try and make a move on the chess board.
-    pub fn make_move(&mut self, from: Position, to: Position) -> Result<GameState<'_>, ChessError> {
+    pub fn make_move(&mut self, move_: &Move) -> Result<GameState<'_>, ChessError> {
+        let from = move_.from;
+        let to = move_.to;
         let from_cell = self
             .chess_board
             .get_piece_at(&from)
@@ -157,8 +159,7 @@ impl ChessGame {
         // TODO: this does not handle castling
         vec![(1, 0), (-1, 0), (0, 1), (0, -1)]
             .into_iter()
-            .map(|(j, i)| pos.add_offset(j, i))
-            .flatten()
+            .flat_map(|(j, i)| pos.add_offset(j, i))
             .collect()
     }
 

@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::fmt::Display;
 use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 
@@ -6,6 +7,7 @@ use std::str::FromStr;
 pub enum ChessError {
     InvalidPiece(String),
     InvalidMove(String),
+    SolverError(String),
 }
 
 impl std::fmt::Display for ChessError {
@@ -13,6 +15,7 @@ impl std::fmt::Display for ChessError {
         match self {
             ChessError::InvalidPiece(msg) => write!(f, "Invalid chess piece: {msg}"),
             ChessError::InvalidMove(msg) => write!(f, "Invalid move: {msg}"),
+            ChessError::SolverError(msg) => write!(f, "Solver error: {msg}"),
         }
     }
 }
@@ -39,6 +42,22 @@ impl Row {
     pub fn try_add(&self, amount: isize) -> Result<Self, ChessError> {
         let u: usize = (*self).into();
         Self::try_from((u as isize) + amount)
+    }
+}
+
+impl Display for Row {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let c = match self {
+            Row::One => '1',
+            Row::Two => '2',
+            Row::Three => '3',
+            Row::Four => '4',
+            Row::Five => '5',
+            Row::Six => '6',
+            Row::Seven => '7',
+            Row::Eight => '8',
+        };
+        write!(f, "{c}")
     }
 }
 
@@ -150,6 +169,22 @@ impl TryFrom<isize> for Column {
     }
 }
 
+impl Display for Column {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let c = match self {
+            Column::A => 'a',
+            Column::B => 'b',
+            Column::C => 'c',
+            Column::D => 'd',
+            Column::E => 'e',
+            Column::F => 'f',
+            Column::G => 'g',
+            Column::H => 'h',
+        };
+        write!(f, "{c}")
+    }
+}
+
 impl From<Column> for usize {
     fn from(val: Column) -> Self {
         match val {
@@ -181,6 +216,12 @@ impl Position {
             row: self.row.try_add(row)?,
             column: self.column.try_add(column)?,
         })
+    }
+}
+
+impl Display for Position {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}{}", self.column, self.row)
     }
 }
 
@@ -256,7 +297,7 @@ impl ChessColour {
     fn hash_multiplier(&self) -> u8 {
         match *self {
             ChessColour::White => 1,
-            ChessColour::Black => 0
+            ChessColour::Black => 0,
         }
     }
     pub fn direction(&self) -> isize {
@@ -358,6 +399,7 @@ impl From<&Cell> for char {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct ChessBoard {
     pub board: [[Cell; 8]; 8],
     pub turn: ChessColour,
@@ -373,9 +415,25 @@ impl ChessBoard {
             None
         }
     }
-}
 
-impl ChessBoard {
+    pub fn pieces(&self) -> impl Iterator<Item = (Position, &Cell)> {
+        self.board.iter().enumerate().flat_map(|(row_index, row)| {
+            row.iter().enumerate().filter_map(move |(col_index, cell)| {
+                if cell.piece.is_some() {
+                    Some((
+                        Position {
+                            row: Row::try_from(row_index as isize).unwrap(),
+                            column: Column::try_from(col_index as isize).unwrap(),
+                        },
+                        cell,
+                    ))
+                } else {
+                    None
+                }
+            })
+        })
+    }
+
     pub fn rows(&self) -> impl DoubleEndedIterator<Item = &[Cell; 8]> {
         self.board.iter()
     }
@@ -387,7 +445,8 @@ impl ChessBoard {
             for j in 0..=7 {
                 let cell = self.board[i][j];
                 if let Some(piece) = cell.piece {
-                    arr[i * 8 + j] = (piece.kind.hash_value() + 8 * cell.colour.hash_multiplier()) as u8;
+                    arr[i * 8 + j] =
+                        piece.kind.hash_value() + 8 * cell.colour.hash_multiplier();
                 }
             }
         }
