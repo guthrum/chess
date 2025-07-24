@@ -27,6 +27,10 @@ impl ChessGame {
         &self.chess_board
     }
 
+    pub fn played_moves(&self) -> &[Move] {
+        &self.moves
+    }
+
     /// Try and make a move on the chess board.
     pub fn make_move(&mut self, move_: &Move) -> Result<GameState<'_>, ChessError> {
         let from = move_.from;

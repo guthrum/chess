@@ -445,8 +445,7 @@ impl ChessBoard {
             for j in 0..=7 {
                 let cell = self.board[i][j];
                 if let Some(piece) = cell.piece {
-                    arr[i * 8 + j] =
-                        piece.kind.hash_value() + 8 * cell.colour.hash_multiplier();
+                    arr[i * 8 + j] = piece.kind.hash_value() + 8 * cell.colour.hash_multiplier();
                 }
             }
         }
@@ -494,7 +493,7 @@ impl FromStr for ChessBoard {
 impl Default for ChessBoard {
     fn default() -> Self {
         let board_str = r#"
-        rnbqkbrn
+        rnbqkbnr
         .pp..ppp
         ........
         p..pp...

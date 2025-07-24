@@ -12,10 +12,11 @@ fn main() {
     let mut game = game::ChessGame::default();
 
     let mut status = GameStatus::Ongoing;
+    let users_chess_colour = ChessColour::White;
 
     while status == GameStatus::Ongoing {
-        render::display_board(game.get_board());
-        while game.get_board().turn == ChessColour::White {
+        render::display_board(&game, game.get_board().turn == users_chess_colour);
+        while game.get_board().turn == users_chess_colour {
             let mut input = String::new();
             println!("Please enter the move you want to play:");
             std::io::stdin()
