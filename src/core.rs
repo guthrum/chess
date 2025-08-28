@@ -252,6 +252,12 @@ pub struct Move {
     pub to: Position,
 }
 
+impl Display for Move {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}->{}", self.from, self.to)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
 pub enum ChessPieceKind {
     Pawn,
@@ -291,6 +297,15 @@ impl ChessPieceKind {
 pub enum ChessColour {
     White,
     Black,
+}
+
+impl Display for ChessColour {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ChessColour::White => write!(f, "White"),
+            ChessColour::Black => write!(f, "Black"),
+        }
+    }
 }
 
 impl ChessColour {

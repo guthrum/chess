@@ -1,3 +1,4 @@
+use std::fmt::{Debug, Formatter};
 use crate::core::{ChessBoard, ChessColour, ChessError, ChessPiece, Move, Position};
 use crate::game::ChessGame;
 
@@ -22,7 +23,9 @@ fn score_board(board: &ChessBoard, self_colour: &ChessColour) -> BoardScore {
         }
     }
 
-    our_value - their_value
+    let score = our_value - their_value;
+    tracing::info!("Score of board for {}: {}", self_colour, score);
+    score
 }
 
 struct RecursionContext {
@@ -48,6 +51,12 @@ struct MoveState {
     move_: Move,
     score: BoardScore,
     game: ChessGame,
+}
+
+impl Debug for MoveState {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Move({:?}, {:?})", self.move_, self.score)
+    }
 }
 
 fn best_move_from_position(
@@ -86,6 +95,7 @@ fn best_move_from_position(
                 };
                 if let Ok(state) = new_game.make_move(&mv) {
                     let score = score_board(new_game.get_board(), self_colour);
+                    tracing::info!("Evaluating move: {} with score: {}", mv, score);
                     move_options.push(MoveState {
                         move_: mv,
                         score,
@@ -103,8 +113,7 @@ fn best_move_from_position(
         // sort by score, descending
         b.score.cmp(&a.score)
     });
-
-    move_options.pop().map(|m| (m.move_, m.score))
+    move_options.first().map(|m| (m.move_, m.score))
 }
 
 pub fn solve_next_move(game: &ChessGame) -> Result<Move, ChessError> {

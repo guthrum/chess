@@ -4,11 +4,19 @@ mod input;
 mod render;
 mod solver;
 
+use tracing_subscriber::EnvFilter;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
 use crate::game::GameStatus;
 use crate::input::parse_input_to_move;
 use core::{ChessBoard, ChessColour, ChessError, ChessPiece};
 
 fn main() {
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::fmt::layer())
+        .with(EnvFilter::from_env("CHESS"))
+        .init();
+
     let mut game = game::ChessGame::default();
 
     let mut status = GameStatus::Ongoing;
