@@ -1,4 +1,4 @@
-use crate::core::{Cell, ChessPiece, ChessPieceKind, Move, Position};
+use crate::core::{Cell, ChessColour, ChessPiece, ChessPieceKind, Move, Position};
 use crate::{ChessBoard, ChessError};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Copy)]
@@ -14,14 +14,55 @@ pub struct GameState<'a> {
 }
 
 /// A simple chess game engine that manages the chess board and handles moves.
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct ChessGame {
     chess_board: ChessBoard,
     moves: Vec<Move>,
     taken_pieces: Vec<ChessPiece>,
+    full_move_count: u32,
+    /// The number of half-moves since the last capture or pawn advance.
+    half_move_clock: u32,
+}
+
+impl Default for ChessGame {
+    fn default() -> Self {
+        Self {
+            chess_board: ChessBoard::default(),
+            moves: Vec::new(),
+            taken_pieces: Vec::new(),
+            full_move_count: 1,
+            half_move_clock: 0,
+        }
+    }
 }
 
 impl ChessGame {
+    pub fn fen(&self) -> String {
+        let mut fen = String::new();
+        for row in self.chess_board.board.iter() {
+            let mut empty_count = 0;
+            for cell in row.iter() {
+                if let Some(piece) = cell.piece {
+                    if empty_count != 0 {
+                        fen.push(char::from_digit(empty_count, 10).unwrap());
+                    }
+                    empty_count = 0;
+                    fen.push(char::from(&piece));
+                } else {
+                    empty_count += 1;
+                }
+            }
+        }
+
+        let move_char = match self.chess_board.turn {
+            ChessColour::White => 'w',
+            ChessColour::Black => 'b',
+        };
+        let half_move_clock = self.half_move_clock;
+        let full_move_count = self.full_move_count;
+        format!("{fen} {move_char} - - {half_move_clock} {full_move_count}")
+    }
+
     /// Get the current chess board.
     pub fn get_board(&self) -> &ChessBoard {
         &self.chess_board
@@ -33,6 +74,7 @@ impl ChessGame {
 
     /// Try and make a move on the chess board.
     pub fn make_move(&mut self, move_: &Move) -> Result<GameState<'_>, ChessError> {
+        let starting_turn = self.chess_board.turn;
         let from = move_.from;
         let to = move_.to;
         let from_cell = self
@@ -52,7 +94,7 @@ impl ChessGame {
             ));
         }
 
-        if !self.get_available_moves(from)?.contains(&to) {
+        let (res, reset_half_clock) = if !self.get_available_moves(from)?.contains(&to) {
             Err(ChessError::InvalidMove("".to_string()))
         } else {
             self.moves.push(Move { from, to });
@@ -76,11 +118,30 @@ impl ChessGame {
             }
             self.chess_board.turn = self.chess_board.turn.flip();
 
-            Ok(GameState {
-                status: GameStatus::Ongoing,
-                board: &self.chess_board,
-            })
+            let reset_half_clock = old_cell
+                .piece
+                .map(|p| p.kind == ChessPieceKind::Pawn)
+                .unwrap_or(false)
+                || taken_cell.piece.is_some();
+
+            Ok((
+                GameState {
+                    status: GameStatus::Ongoing,
+                    board: &self.chess_board,
+                },
+                reset_half_clock,
+            ))
+        }?;
+        if starting_turn == ChessColour::Black {
+            self.full_move_count += 1;
         }
+        if reset_half_clock {
+            self.half_move_clock = 0;
+        } else {
+            self.half_move_clock += 1;
+        }
+
+        Ok(res)
     }
 
     /// Get the available moves for a piece at the given position.

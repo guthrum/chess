@@ -252,6 +252,24 @@ pub struct Move {
     pub to: Position,
 }
 
+impl Move {
+    pub fn from_uci(s: &str) -> Result<Self, ChessError> {
+        // parse the format e2e4, b1c3, ...
+        if s.len() != 4 {
+            return Err(ChessError::InvalidMove(format!(
+                "Invalid move format: '{s}'"
+            )));
+        }
+        let from = Position::from_str(s.get(0..2).ok_or_else(|| {
+            ChessError::InvalidMove(format!("Invalid from position in move: '{s}'"))
+        })?)?;
+        let to = Position::from_str(s.get(2..4).ok_or_else(|| {
+            ChessError::InvalidMove(format!("Invalid to position in move: '{s}'"))
+        })?)?;
+        Ok(Move { from, to })
+    }
+}
+
 impl Display for Move {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}->{}", self.from, self.to)
@@ -509,12 +527,12 @@ impl Default for ChessBoard {
     fn default() -> Self {
         let board_str = r#"
         rnbqkbnr
-        .pp..ppp
+        pppppppp
         ........
-        p..pp...
-        P..PP...
         ........
-        .PP..PPP
+        ........
+        ........
+        PPPPPPPP
         RNBQKBRN
     "#;
         let board = ChessBoard::from_str(board_str).expect("Failed to parse chess board");

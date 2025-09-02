@@ -42,7 +42,3 @@ pub fn display_board(game: &ChessGame, highlight_last_move: bool) {
         println!("White's turn");
     }
 }
-
-fn render_piece(piece: &ChessPiece) -> char {
-    piece.into()
-}

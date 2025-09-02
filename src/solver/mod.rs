@@ -1,6 +1,6 @@
-use std::fmt::{Debug, Formatter};
 use crate::core::{ChessBoard, ChessColour, ChessError, ChessPiece, Move, Position};
 use crate::game::ChessGame;
+use std::fmt::{Debug, Formatter};
 
 type BoardScore = i32;
 
